@@ -65,19 +65,249 @@ class _TaskDashboardState extends State<TaskDashboard> {
   }
 
   void _editTask(int index) {
-    setState(() {
-      tasks[index] = Task(
-          name: 'Edited Task',
-          time: '10:00 - 11:00',
-          date: '02/09/2024',
-          isCompleted: false);
-    });
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController taskNameController =
+            TextEditingController(text: tasks[index].name);
+
+        TimeOfDay selectedTime;
+        DateTime selectedDate;
+
+        try {
+          DateTime taskDateTime = DateFormat.jm().parse(tasks[index].time);
+          selectedTime = TimeOfDay.fromDateTime(taskDateTime);
+        } catch (e) {
+          selectedTime = TimeOfDay.now();
+        }
+
+        try {
+          selectedDate = DateFormat.yMMMd().parse(tasks[index].date);
+        } catch (e) {
+          selectedDate = DateTime.now();
+        }
+
+        String formatTimeOfDay(TimeOfDay time) {
+          final now = DateTime.now();
+          final dt =
+              DateTime(now.year, now.month, now.day, time.hour, time.minute);
+          final format = DateFormat.jm();
+          return format.format(dt);
+        }
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Task'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: taskNameController,
+                    decoration: const InputDecoration(labelText: 'Task Name'),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Time: ${formatTimeOfDay(selectedTime)}'),
+                      TextButton(
+                        onPressed: () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              selectedTime = pickedTime;
+                            });
+                          }
+                        },
+                        child: const Text('Pick Time'),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Date: ${DateFormat.yMMMd().format(selectedDate)}'),
+                      TextButton(
+                        onPressed: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2101),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              selectedDate = pickedDate;
+                            });
+                          }
+                        },
+                        child: const Text('Pick Date'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      tasks[index] = Task(
+                        name: taskNameController.text,
+                        time: formatTimeOfDay(selectedTime),
+                        date: DateFormat.yMMMd().format(selectedDate),
+                        isCompleted: false,
+                      );
+                    });
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _deleteTask(int index) {
-    setState(() {
-      tasks.removeAt(index);
-    });
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Task'),
+          content: const Text('Are you sure you want to delete this task?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  tasks.removeAt(index);
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addTask() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController taskNameController = TextEditingController();
+        TimeOfDay selectedTime = TimeOfDay.now();
+        DateTime selectedDate = DateTime.now();
+
+        String formatTimeOfDay(TimeOfDay time) {
+          final now = DateTime.now();
+          final dt =
+              DateTime(now.year, now.month, now.day, time.hour, time.minute);
+          final format = DateFormat.jm();
+          return format.format(dt);
+        }
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add Task'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: taskNameController,
+                    decoration: const InputDecoration(labelText: 'Task Name'),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Time: ${formatTimeOfDay(selectedTime)}'),
+                      TextButton(
+                        onPressed: () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              selectedTime =
+                                  pickedTime;
+                            });
+                          }
+                        },
+                        child: const Text('Pick Time'),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Date: ${DateFormat.yMMMd().format(selectedDate)}'),
+                      TextButton(
+                        onPressed: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2101),
+                          );
+                          if (pickedDate != null) {
+                            setState(() {
+                              selectedDate =
+                                  pickedDate;
+                            });
+                          }
+                        },
+                        child: const Text('Pick Date'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      tasks.add(Task(
+                        name: taskNameController.text,
+                        time: formatTimeOfDay(selectedTime),
+                        date: DateFormat.yMMMd().format(selectedDate),
+                        isCompleted: false,
+                      ));
+                    });
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -214,7 +444,10 @@ class _TaskDashboardState extends State<TaskDashboard> {
                               Text(
                                 tasks[index].name,
                                 style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
                               Text(
                                 '${tasks[index].time} - ${tasks[index].date}',
@@ -268,7 +501,12 @@ class _TaskDashboardState extends State<TaskDashboard> {
         backgroundColor: const Color(0xFF385997),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey[400],
-        type: BottomNavigationBarType.fixed, // Ensures it takes the full width
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 2) {
+            _addTask();
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
