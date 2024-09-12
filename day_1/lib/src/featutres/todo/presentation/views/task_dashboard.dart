@@ -14,6 +14,10 @@ class TaskDashboard extends StatefulWidget {
 class _TaskDashboardState extends State<TaskDashboard> {
   DateTime _selectedDate = DateTime.now();
   List<DateTime> _weekDays = [];
+  List<Task> _filteredTasks = [];
+  int _todayCount = 0;
+  int _thisWeekCount = 0;
+  int _importantCount = 0;
 
   String _getGreetingMessage() {
     final hour = DateTime.now().hour;
@@ -30,6 +34,8 @@ class _TaskDashboardState extends State<TaskDashboard> {
   void initState() {
     super.initState();
     _calculateWeekDays();
+    _updateStatistics();
+    _filterTasksForSelectedDay();
   }
 
   void _calculateWeekDays() {
@@ -42,9 +48,41 @@ class _TaskDashboardState extends State<TaskDashboard> {
     });
   }
 
+  void _updateStatistics() {
+    final today = DateTime.now();
+    final thisWeekStart = today.subtract(Duration(days: today.weekday - 1));
+    final thisWeekEnd = thisWeekStart.add(const Duration(days: 6));
+
+    setState(() {
+      _todayCount = tasks.where((task) {
+        final taskDate = DateFormat.yMMMd().parse(task.date);
+        return taskDate.isSameDay(today);
+      }).length;
+
+      _thisWeekCount = tasks.where((task) {
+        final taskDate = DateFormat.yMMMd().parse(task.date);
+        return taskDate
+                .isAfter(thisWeekStart.subtract(const Duration(days: 1))) &&
+            taskDate.isBefore(thisWeekEnd.add(const Duration(days: 1)));
+      }).length;
+
+      _importantCount = tasks.where((task) => task.isCompleted).length;
+    });
+  }
+
   void _onDaySelected(DateTime date) {
     setState(() {
       _selectedDate = date;
+      _updateTodayTasksCount(); // Update count when day is selected
+    });
+  }
+
+  void _filterTasksForSelectedDay() {
+    setState(() {
+      _filteredTasks = tasks.where((task) {
+        final taskDate = DateFormat.yMMMd().parse(task.date);
+        return taskDate.isSameDay(_selectedDate);
+      }).toList();
     });
   }
 
@@ -62,6 +100,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
     setState(() {
       tasks[index].isCompleted = !tasks[index].isCompleted;
     });
+    _updateStatistics();
   }
 
   void _editTask(int index) {
@@ -198,6 +237,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                 setState(() {
                   tasks.removeAt(index);
                 });
+                _updateStatistics(); // Update statistics after deleting a task
                 Navigator.of(context).pop();
               },
               child: const Text('Delete'),
@@ -206,6 +246,12 @@ class _TaskDashboardState extends State<TaskDashboard> {
         );
       },
     );
+  }
+
+  void _updateTodayTasksCount() {
+    setState(() {
+      _todayCount = _filteredTasks.length;
+    });
   }
 
   void _addTask() {
@@ -247,8 +293,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                           );
                           if (pickedTime != null) {
                             setState(() {
-                              selectedTime =
-                                  pickedTime;
+                              selectedTime = pickedTime;
                             });
                           }
                         },
@@ -270,8 +315,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                           );
                           if (pickedDate != null) {
                             setState(() {
-                              selectedDate =
-                                  pickedDate;
+                              selectedDate = pickedDate;
                             });
                           }
                         },
@@ -297,6 +341,12 @@ class _TaskDashboardState extends State<TaskDashboard> {
                         date: DateFormat.yMMMd().format(selectedDate),
                         isCompleted: false,
                       ));
+
+                      // Update statistics
+                      if (selectedDate.isSameDay(_selectedDate)) {
+                        _todayCount++;
+                      }
+                      _thisWeekCount++;
                     });
                     Navigator.of(context).pop();
                   },
@@ -411,7 +461,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                 thumbVisibility: true,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(10),
-                  itemCount: tasks.length,
+                  itemCount: _filteredTasks.length,
                   itemBuilder: (context, index) {
                     return Container(
                       margin: const EdgeInsets.symmetric(
@@ -431,7 +481,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                       child: Row(
                         children: [
                           Checkbox(
-                            value: tasks[index].isCompleted,
+                            value: _filteredTasks[index].isCompleted,
                             onChanged: (bool? newValue) {
                               _toggleTaskCompletion(index);
                             },
@@ -442,7 +492,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                tasks[index].name,
+                                _filteredTasks[index].name,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -450,7 +500,7 @@ class _TaskDashboardState extends State<TaskDashboard> {
                                 ),
                               ),
                               Text(
-                                '${tasks[index].time} - ${tasks[index].date}',
+                                '${_filteredTasks[index].time} - ${_filteredTasks[index].date}',
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
                             ],
@@ -487,9 +537,9 @@ class _TaskDashboardState extends State<TaskDashboard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatisticItem('35', 'This Week'),
-                    _buildStatisticItem('8', 'Important'),
-                    _buildStatisticItem('7', 'Today Tasks'),
+                    _buildStatisticItem('$_thisWeekCount', 'This Week'),
+                    _buildStatisticItem('$_importantCount', 'Important'),
+                    _buildStatisticItem('$_todayCount', 'Today Tasks'),
                   ],
                 ),
               ],
